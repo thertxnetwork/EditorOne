@@ -197,8 +197,9 @@ lib/
 | Package | Purpose |
 |---------|---------|
 | `provider` | State management |
-| `re_editor` | Code editor widget |
-| `flutter_highlight` | Syntax highlighting |
+| `flutter_code_editor` | Code editor widget with syntax highlighting |
+| `flutter_highlight` | Syntax highlighting themes |
+| `highlight` | Language definitions |
 | `file_picker` | File/folder selection |
 | `path_provider` | File system paths |
 | `permission_handler` | Android permissions |

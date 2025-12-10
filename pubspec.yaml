@@ -32,7 +32,7 @@ dependencies:
   highlight: ^0.7.0
   
   # Code Editor
-  re_editor: ^0.5.4
+  flutter_code_editor: ^0.3.5
   
   # JSON handling
   collection: ^1.19.1

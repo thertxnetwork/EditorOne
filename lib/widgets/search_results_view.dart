@@ -34,7 +34,7 @@ class SearchResultsView extends StatelessWidget {
             Icon(
               Icons.search_off_rounded,
               size: 48,
-              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+              color: colorScheme.onSurfaceVariant.withOpacity(0.5),
             ),
             const SizedBox(height: 16),
             Text(
@@ -53,7 +53,7 @@ class SearchResultsView extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
             border: Border(
               bottom: BorderSide(color: colorScheme.outlineVariant),
             ),

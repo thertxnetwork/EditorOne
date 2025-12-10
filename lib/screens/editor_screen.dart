@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:re_editor/re_editor.dart';
+import 'package:flutter_code_editor/flutter_code_editor.dart';
+import 'package:highlight/languages/all.dart';
+import 'package:flutter_highlight/themes/monokai-sublime.dart';
+import 'package:flutter_highlight/themes/vs.dart';
 import '../providers/providers.dart';
 import '../widgets/widgets.dart';
 import '../services/file_service.dart';
+import '../utils/language_detector.dart';
 import 'file_explorer_drawer.dart';
 import 'settings_screen.dart';
 import 'search_screen.dart';
@@ -19,16 +23,12 @@ class EditorScreen extends StatefulWidget {
 class _EditorScreenState extends State<EditorScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final FileService _fileService = FileService();
-  CodeLineEditingController? _codeController;
+  CodeController? _codeController;
+  String? _lastFileKey;
 
   @override
   void initState() {
     super.initState();
-    _initCodeController();
-  }
-
-  void _initCodeController() {
-    _codeController = CodeLineEditingController();
   }
 
   @override
@@ -37,16 +37,67 @@ class _EditorScreenState extends State<EditorScreen> {
     super.dispose();
   }
 
+  void _updateCodeController(String content, String? language) {
+    _codeController?.dispose();
+    _codeController = CodeController(
+      text: content,
+      language: _getLanguageMode(language),
+    );
+  }
+
+  Mode? _getLanguageMode(String? language) {
+    if (language == null) return null;
+    
+    // Map our language names to highlight.js language modes
+    final languageMap = {
+      'dart': allLanguages['dart'],
+      'javascript': allLanguages['javascript'],
+      'typescript': allLanguages['typescript'],
+      'python': allLanguages['python'],
+      'java': allLanguages['java'],
+      'kotlin': allLanguages['kotlin'],
+      'swift': allLanguages['swift'],
+      'go': allLanguages['go'],
+      'rust': allLanguages['rust'],
+      'c': allLanguages['c'],
+      'cpp': allLanguages['cpp'],
+      'csharp': allLanguages['cs'],
+      'html': allLanguages['xml'],
+      'css': allLanguages['css'],
+      'json': allLanguages['json'],
+      'yaml': allLanguages['yaml'],
+      'xml': allLanguages['xml'],
+      'sql': allLanguages['sql'],
+      'bash': allLanguages['bash'],
+      'shell': allLanguages['shell'],
+      'markdown': allLanguages['markdown'],
+      'php': allLanguages['php'],
+      'ruby': allLanguages['ruby'],
+      'scala': allLanguages['scala'],
+      'groovy': allLanguages['groovy'],
+      'plaintext': null,
+    };
+    
+    return languageMap[language];
+  }
+
   @override
   Widget build(BuildContext context) {
     final editorProvider = context.watch<EditorProvider>();
     final settingsProvider = context.watch<SettingsProvider>();
-    final colorScheme = Theme.of(context).colorScheme;
     
-    // Update controller content when active file changes
-    if (editorProvider.activeFile != null && 
-        _codeController?.text != editorProvider.activeFile!.content) {
-      _codeController?.text = editorProvider.activeFile!.content;
+    // Update controller when active file changes
+    final currentFileKey = editorProvider.activeFile?.path ?? 
+        editorProvider.activeFile?.name;
+    if (editorProvider.activeFile != null && currentFileKey != _lastFileKey) {
+      _lastFileKey = currentFileKey;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _updateCodeController(
+          editorProvider.activeFile!.content,
+          editorProvider.activeFile!.language,
+        );
+        if (mounted) setState(() {});
+      });
     }
 
     return Scaffold(
@@ -164,7 +215,10 @@ class _EditorScreenState extends State<EditorScreen> {
             EditorTabBar(
               files: editorProvider.openFiles,
               activeIndex: editorProvider.activeIndex,
-              onTabSelected: (index) => editorProvider.setActiveIndex(index),
+              onTabSelected: (index) {
+                editorProvider.setActiveIndex(index);
+                _lastFileKey = null; // Force controller update
+              },
               onTabClosed: (index) => _closeFile(index),
             ),
           // Editor content
@@ -175,7 +229,7 @@ class _EditorScreenState extends State<EditorScreen> {
                     onOpenFile: _openFile,
                     onOpenFolder: _openFolder,
                   )
-                : _buildCodeEditor(settingsProvider, colorScheme),
+                : _buildCodeEditor(settingsProvider),
           ),
         ],
       ),
@@ -186,118 +240,53 @@ class _EditorScreenState extends State<EditorScreen> {
     );
   }
 
-  Widget _buildCodeEditor(SettingsProvider settings, ColorScheme colorScheme) {
+  Widget _buildCodeEditor(SettingsProvider settings) {
     final editorProvider = context.read<EditorProvider>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
     
-    return CodeEditor(
-      controller: _codeController!,
-      style: CodeEditorStyle(
-        fontSize: settings.fontSize,
-        fontFamily: settings.fontFamily,
-        codeTheme: CodeHighlightTheme(
-          languages: {},
-          theme: isDark ? _getDarkTheme() : _getLightTheme(),
+    if (_codeController == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    
+    return Container(
+      color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+      child: CodeTheme(
+        data: CodeThemeData(styles: isDark ? monokaiSublimeTheme : vsTheme),
+        child: SingleChildScrollView(
+          child: CodeField(
+            controller: _codeController!,
+            textStyle: TextStyle(
+              fontFamily: settings.fontFamily,
+              fontSize: settings.fontSize,
+            ),
+            lineNumberStyle: TextStyle(
+              fontFamily: settings.fontFamily,
+              fontSize: settings.fontSize - 2,
+              color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+            ),
+            onChanged: (code) {
+              editorProvider.updateContent(code);
+            },
+            wrap: settings.wordWrap,
+            gutterStyle: GutterStyle(
+              showLineNumbers: settings.showLineNumbers,
+              showErrors: false,
+              showFoldingHandles: true,
+              margin: 8,
+              textStyle: TextStyle(
+                fontFamily: settings.fontFamily,
+                fontSize: settings.fontSize - 2,
+                color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+              ),
+              background: isDark 
+                  ? const Color(0xFF252526) 
+                  : colorScheme.surfaceContainerHighest,
+            ),
+          ),
         ),
       ),
-      wordWrap: settings.wordWrap,
-      showLineNumbers: settings.showLineNumbers,
-      onChanged: (code) {
-        editorProvider.updateContent(code);
-      },
     );
-  }
-
-  Map<String, TextStyle> _getDarkTheme() {
-    return {
-      'root': const TextStyle(backgroundColor: Color(0xFF1E1E1E), color: Color(0xFFD4D4D4)),
-      'keyword': const TextStyle(color: Color(0xFF569CD6)),
-      'built_in': const TextStyle(color: Color(0xFF4EC9B0)),
-      'type': const TextStyle(color: Color(0xFF4EC9B0)),
-      'literal': const TextStyle(color: Color(0xFF569CD6)),
-      'number': const TextStyle(color: Color(0xFFB5CEA8)),
-      'regexp': const TextStyle(color: Color(0xFFD16969)),
-      'string': const TextStyle(color: Color(0xFFCE9178)),
-      'subst': const TextStyle(color: Color(0xFFD4D4D4)),
-      'symbol': const TextStyle(color: Color(0xFFB5CEA8)),
-      'class': const TextStyle(color: Color(0xFF4EC9B0)),
-      'function': const TextStyle(color: Color(0xFFDCDCAA)),
-      'title': const TextStyle(color: Color(0xFFDCDCAA)),
-      'params': const TextStyle(color: Color(0xFFD4D4D4)),
-      'comment': const TextStyle(color: Color(0xFF6A9955)),
-      'doctag': const TextStyle(color: Color(0xFF608B4E)),
-      'meta': const TextStyle(color: Color(0xFF9B9B9B)),
-      'meta-keyword': const TextStyle(color: Color(0xFF569CD6)),
-      'meta-string': const TextStyle(color: Color(0xFFCE9178)),
-      'section': const TextStyle(color: Color(0xFFDCDCAA)),
-      'tag': const TextStyle(color: Color(0xFF569CD6)),
-      'name': const TextStyle(color: Color(0xFF4EC9B0)),
-      'attr': const TextStyle(color: Color(0xFF9CDCFE)),
-      'attribute': const TextStyle(color: Color(0xFF9CDCFE)),
-      'variable': const TextStyle(color: Color(0xFF9CDCFE)),
-      'bullet': const TextStyle(color: Color(0xFFD7BA7D)),
-      'code': const TextStyle(color: Color(0xFFCE9178)),
-      'emphasis': const TextStyle(fontStyle: FontStyle.italic),
-      'strong': const TextStyle(fontWeight: FontWeight.bold),
-      'formula': const TextStyle(color: Color(0xFFD4D4D4)),
-      'link': const TextStyle(color: Color(0xFF569CD6)),
-      'quote': const TextStyle(color: Color(0xFF6A9955)),
-      'selector-tag': const TextStyle(color: Color(0xFFD7BA7D)),
-      'selector-id': const TextStyle(color: Color(0xFF569CD6)),
-      'selector-class': const TextStyle(color: Color(0xFFD7BA7D)),
-      'selector-attr': const TextStyle(color: Color(0xFF9CDCFE)),
-      'selector-pseudo': const TextStyle(color: Color(0xFFD7BA7D)),
-      'template-tag': const TextStyle(color: Color(0xFF569CD6)),
-      'template-variable': const TextStyle(color: Color(0xFF9CDCFE)),
-      'addition': const TextStyle(color: Color(0xFF4EC9B0)),
-      'deletion': const TextStyle(color: Color(0xFFD16969)),
-    };
-  }
-
-  Map<String, TextStyle> _getLightTheme() {
-    return {
-      'root': const TextStyle(backgroundColor: Color(0xFFFFFFFF), color: Color(0xFF000000)),
-      'keyword': const TextStyle(color: Color(0xFF0000FF)),
-      'built_in': const TextStyle(color: Color(0xFF267F99)),
-      'type': const TextStyle(color: Color(0xFF267F99)),
-      'literal': const TextStyle(color: Color(0xFF0000FF)),
-      'number': const TextStyle(color: Color(0xFF098658)),
-      'regexp': const TextStyle(color: Color(0xFF811F3F)),
-      'string': const TextStyle(color: Color(0xFFA31515)),
-      'subst': const TextStyle(color: Color(0xFF000000)),
-      'symbol': const TextStyle(color: Color(0xFF098658)),
-      'class': const TextStyle(color: Color(0xFF267F99)),
-      'function': const TextStyle(color: Color(0xFF795E26)),
-      'title': const TextStyle(color: Color(0xFF795E26)),
-      'params': const TextStyle(color: Color(0xFF000000)),
-      'comment': const TextStyle(color: Color(0xFF008000)),
-      'doctag': const TextStyle(color: Color(0xFF008000)),
-      'meta': const TextStyle(color: Color(0xFF808080)),
-      'meta-keyword': const TextStyle(color: Color(0xFF0000FF)),
-      'meta-string': const TextStyle(color: Color(0xFFA31515)),
-      'section': const TextStyle(color: Color(0xFF795E26)),
-      'tag': const TextStyle(color: Color(0xFF800000)),
-      'name': const TextStyle(color: Color(0xFF800000)),
-      'attr': const TextStyle(color: Color(0xFFFF0000)),
-      'attribute': const TextStyle(color: Color(0xFFFF0000)),
-      'variable': const TextStyle(color: Color(0xFF001080)),
-      'bullet': const TextStyle(color: Color(0xFF098658)),
-      'code': const TextStyle(color: Color(0xFFA31515)),
-      'emphasis': const TextStyle(fontStyle: FontStyle.italic),
-      'strong': const TextStyle(fontWeight: FontWeight.bold),
-      'formula': const TextStyle(color: Color(0xFF000000)),
-      'link': const TextStyle(color: Color(0xFF0000FF)),
-      'quote': const TextStyle(color: Color(0xFF008000)),
-      'selector-tag': const TextStyle(color: Color(0xFF800000)),
-      'selector-id': const TextStyle(color: Color(0xFF0000FF)),
-      'selector-class': const TextStyle(color: Color(0xFF800000)),
-      'selector-attr': const TextStyle(color: Color(0xFFFF0000)),
-      'selector-pseudo': const TextStyle(color: Color(0xFF800000)),
-      'template-tag': const TextStyle(color: Color(0xFF0000FF)),
-      'template-variable': const TextStyle(color: Color(0xFF001080)),
-      'addition': const TextStyle(color: Color(0xFF267F99)),
-      'deletion': const TextStyle(color: Color(0xFF811F3F)),
-    };
   }
 
   Widget _buildStatusBar(EditorProvider editor, SettingsProvider settings) {
@@ -316,7 +305,7 @@ class _EditorScreenState extends State<EditorScreen> {
       child: Row(
         children: [
           Text(
-            file?.language?.toUpperCase() ?? 'TEXT',
+            LanguageDetector.getLanguageDisplayName(file?.language),
             style: TextStyle(
               fontSize: 11,
               color: colorScheme.onSurfaceVariant,
@@ -357,6 +346,7 @@ class _EditorScreenState extends State<EditorScreen> {
     switch (action) {
       case 'new_file':
         editorProvider.createNewFile();
+        _lastFileKey = null;
         break;
       case 'open_file':
         _openFile();
@@ -388,6 +378,7 @@ class _EditorScreenState extends State<EditorScreen> {
     if (path != null && mounted) {
       final success = await context.read<EditorProvider>().openFile(path);
       if (success) {
+        _lastFileKey = null;
         await context.read<SettingsProvider>().addRecentFile(path);
       } else {
         _showSnackBar('Failed to open file');
@@ -459,6 +450,7 @@ class _EditorScreenState extends State<EditorScreen> {
     
     if (mounted) {
       await editorProvider.closeFile(index);
+      _lastFileKey = null;
     }
   }
 

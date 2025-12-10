@@ -27,7 +27,7 @@ class EditorTabBar extends StatelessWidget {
     return Container(
       height: 40,
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
         border: Border(
           bottom: BorderSide(
             color: colorScheme.outlineVariant,
@@ -84,7 +84,7 @@ class _EditorTab extends StatelessWidget {
         decoration: BoxDecoration(
           color: isActive
               ? colorScheme.surface
-              : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              : colorScheme.surfaceContainerHighest.withOpacity(0.5),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
           border: isActive
               ? Border(

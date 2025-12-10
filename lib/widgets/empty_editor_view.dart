@@ -24,7 +24,7 @@ class EmptyEditorView extends StatelessWidget {
           Icon(
             Icons.code_rounded,
             size: 80,
-            color: colorScheme.primary.withValues(alpha: 0.5),
+            color: colorScheme.primary.withOpacity(0.5),
           ),
           const SizedBox(height: 24),
           Text(
@@ -113,7 +113,7 @@ class _KeyboardShortcuts extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(

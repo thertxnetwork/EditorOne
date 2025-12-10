@@ -97,7 +97,7 @@ class _SearchScreenState extends State<SearchScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
               border: Border(
                 bottom: BorderSide(color: colorScheme.outlineVariant),
               ),
@@ -173,7 +173,7 @@ class _SearchScreenState extends State<SearchScreen> {
           Icon(
             Icons.folder_off_rounded,
             size: 64,
-            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+            color: colorScheme.onSurfaceVariant.withOpacity(0.5),
           ),
           const SizedBox(height: 16),
           Text(
@@ -187,7 +187,7 @@ class _SearchScreenState extends State<SearchScreen> {
           Text(
             'Open a folder to search in files',
             style: TextStyle(
-              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              color: colorScheme.onSurfaceVariant.withOpacity(0.7),
             ),
           ),
         ],

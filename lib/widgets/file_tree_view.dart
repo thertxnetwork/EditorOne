@@ -104,7 +104,7 @@ class _FileTreeItem extends StatelessWidget {
             ),
             decoration: BoxDecoration(
               color: isSelected
-                  ? colorScheme.primaryContainer.withValues(alpha: 0.5)
+                  ? colorScheme.primaryContainer.withOpacity(0.5)
                   : null,
               borderRadius: BorderRadius.circular(8),
             ),
