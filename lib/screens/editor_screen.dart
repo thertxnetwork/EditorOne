@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_code_editor/flutter_code_editor.dart';
+import 'package:highlight/highlight.dart' show Mode;
 import 'package:highlight/languages/all.dart';
 import 'package:flutter_highlight/themes/monokai-sublime.dart';
 import 'package:flutter_highlight/themes/vs.dart';
@@ -259,11 +260,6 @@ class _EditorScreenState extends State<EditorScreen> {
             textStyle: TextStyle(
               fontFamily: settings.fontFamily,
               fontSize: settings.fontSize,
-            ),
-            lineNumberStyle: TextStyle(
-              fontFamily: settings.fontFamily,
-              fontSize: settings.fontSize - 2,
-              color: colorScheme.onSurfaceVariant.withOpacity(0.5),
             ),
             onChanged: (code) {
               editorProvider.updateContent(code);
