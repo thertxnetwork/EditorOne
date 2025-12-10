@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/providers.dart';
 import '../widgets/search_results_view.dart';
+import '../models/search_result.dart';
 
 /// Search screen for searching in files
 class SearchScreen extends StatefulWidget {
@@ -212,7 +213,7 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
-  void _openResult(result) {
+  void _openResult(SearchResult result) {
     final editorProvider = context.read<EditorProvider>();
     editorProvider.openFile(result.filePath);
     Navigator.pop(context);

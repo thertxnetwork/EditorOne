@@ -8,8 +8,8 @@ class FileTreeView extends StatelessWidget {
   final Function(FileItem) onItemTap;
   final Function(FileItem)? onItemLongPress;
   final Function(FileItem)? onExpand;
-  final Function(String)? getChildren;
-  final Function(String)? isExpanded;
+  final List<FileItem>? Function(String)? getChildren;
+  final bool Function(String)? isExpanded;
   final String? selectedPath;
   final int depth;
 
@@ -36,9 +36,6 @@ class FileTreeView extends StatelessWidget {
         final item = items[index];
         return _FileTreeItem(
           item: item,
-          onTap: () => onItemTap(item),
-          onLongPress: onItemLongPress != null ? () => onItemLongPress!(item) : null,
-          onExpand: onExpand != null ? () => onExpand!(item) : null,
           children: getChildren?.call(item.path),
           isExpanded: isExpanded?.call(item.path) ?? false,
           isSelected: selectedPath == item.path,
@@ -47,7 +44,7 @@ class FileTreeView extends StatelessWidget {
           isExpandedCheck: isExpanded,
           onItemTap: onItemTap,
           onItemLongPress: onItemLongPress,
-          onExpandChild: onExpand,
+          onExpand: onExpand,
         );
       },
     );
@@ -56,24 +53,18 @@ class FileTreeView extends StatelessWidget {
 
 class _FileTreeItem extends StatelessWidget {
   final FileItem item;
-  final VoidCallback onTap;
-  final VoidCallback? onLongPress;
-  final VoidCallback? onExpand;
   final List<FileItem>? children;
   final bool isExpanded;
   final bool isSelected;
   final int depth;
-  final Function(String)? getChildren;
-  final Function(String)? isExpandedCheck;
+  final List<FileItem>? Function(String)? getChildren;
+  final bool Function(String)? isExpandedCheck;
   final Function(FileItem) onItemTap;
   final Function(FileItem)? onItemLongPress;
-  final Function(FileItem)? onExpandChild;
+  final Function(FileItem)? onExpand;
 
   const _FileTreeItem({
     required this.item,
-    required this.onTap,
-    this.onLongPress,
-    this.onExpand,
     this.children,
     required this.isExpanded,
     required this.isSelected,
@@ -82,7 +73,7 @@ class _FileTreeItem extends StatelessWidget {
     this.isExpandedCheck,
     required this.onItemTap,
     this.onItemLongPress,
-    this.onExpandChild,
+    this.onExpand,
   });
 
   @override
@@ -93,8 +84,10 @@ class _FileTreeItem extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         InkWell(
-          onTap: item.isDirectory ? onExpand : onTap,
-          onLongPress: onLongPress,
+          onTap: item.isDirectory 
+              ? (onExpand != null ? () => onExpand!(item) : null)
+              : () => onItemTap(item),
+          onLongPress: onItemLongPress != null ? () => onItemLongPress!(item) : null,
           child: Container(
             padding: EdgeInsets.only(
               left: 8 + (depth * 16),
@@ -145,13 +138,6 @@ class _FileTreeItem extends StatelessWidget {
               children: children!.map((child) {
                 return _FileTreeItem(
                   item: child,
-                  onTap: () => onItemTap(child),
-                  onLongPress: onItemLongPress != null
-                      ? () => onItemLongPress!(child)
-                      : null,
-                  onExpand: onExpandChild != null
-                      ? () => onExpandChild!(child)
-                      : null,
                   children: getChildren?.call(child.path),
                   isExpanded: isExpandedCheck?.call(child.path) ?? false,
                   isSelected: false,
@@ -160,7 +146,7 @@ class _FileTreeItem extends StatelessWidget {
                   isExpandedCheck: isExpandedCheck,
                   onItemTap: onItemTap,
                   onItemLongPress: onItemLongPress,
-                  onExpandChild: onExpandChild,
+                  onExpand: onExpand,
                 );
               }).toList(),
             ),
